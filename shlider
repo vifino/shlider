@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# shlider.
+
+usage() {
+	echo Usage: $(basename "$0") slide_dir 
+}
+
+if [ -z "$1" ]; then
+	echo Please provide a slide dir.
+	usage
+	exit 1
+fi
+
+DIR="$1"
+
+for f in $DIR/*.md; do
+	# Clear terminal, display title.
+	clear
+	head -n1 "$f"
+
+	# Read file into lines
+	declare -a lines=()
+	while IFS= read -r line; do
+		lines+=( "$line" )
+	done < <(tail -n+2 "$f")
+
+	wait=1
+	block=0
+	
+	for line in "${lines[@]}"; do
+		wait=0
+		case "$line" in
+			" "*) wait=0 ;;
+			'```'*)
+				if [ $block = 1 ]; then block=0 && wait=1 && continue;
+				else block=1 && wait=0 && continue;
+				fi ;;
+			*) wait=0 ;;
+		esac
+		[ -z "$line" ] && wait=1
+	
+		[ $wait = 1 ] && read
+
+		if [ $block = 1 ]; then
+			printf "\t%s\n" "$line"
+			continue
+		fi
+
+		case "$line" in
+			'*'*) printf "\t%s" "$line" ;;
+			*) printf "%s" "$line" ;;
+		esac
+		[ $wait = 0 ] && printf "\n"
+	done
+	read
+done
